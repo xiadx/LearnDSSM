@@ -11,7 +11,7 @@ from keras.layers import Activation, Input, Embedding
 from keras.layers.core import Dense, Lambda, Reshape
 from keras.layers.merge import concatenate, dot
 from keras.layers.convolutional import Convolution1D
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from preprocessing import *
@@ -38,6 +38,8 @@ def load_dssm_train_data(path):
         positive_item_document: [positive_item_document1, positive_item_document2]
         negtive_item_documents: [[negtive_item_document1, negtive_item_document2], [...], ...]
     """
+    if not os.path.exists(path):
+        return
     user_document, positive_item_document, negtive_item_documents = [], [], [[] for _ in range(J)]
     with open(path, "rb") as fp:
         for line in fp:
@@ -133,27 +135,41 @@ model.fit([user_document, positive_item_document] + negtive_item_documents,
           epochs=EPOCHS)
 
 
-# save user_sem_model item_sem_model
+# user_sem_model item_sem_model
 user_sem_model = Model(inputs=model.get_layer("user_input").input, outputs=model.get_layer("user_sem").output)
 item_sem_model = Model(inputs=model.get_layer("item_input").input, outputs=model.get_layer("item_sem").get_output_at(0))
-user_sem_model.save("Demo01/user_sem_model.h5")
-item_sem_model.save("Demo01/item_sem_model.h5")
 
 
-# # save user item deep structured semantic representation
-# from preprocessing import *
-# user_path = "../ml-100k/u.user"
-# fcut_words_user_info(user_path)
+# save user item deep structured semantic representation
+user_path = "../ml-100k/u.user"
+genre_path = "../ml-100k/u.genre"
+item_path = "../ml-100k/u.item"
+genre_dict = get_genre_dict(genre_path)
+item_info = get_item_info(item_path, genre_dict)
+user_cut_words = cut_words_user_info(user_path)
+item_cut_words = cut_words_item_info(item_info)
+
+user_sem_path = "user_sem.data"
+item_sem_path = "item_sem.data"
+
+userids, user_documents = user_cut_words.keys(), user_cut_words.values()
+user_sem_vectors = user_sem_model.predict(pad_sequences(tk.texts_to_sequences(user_documents)))
+with open(user_sem_path, "wb") as fp:
+    for i in range(len(userids)):
+        fp.write("user_" + userids[i] + " " + " ".join([str(_) for _ in user_sem_vectors[i]]) + "\n")
+
+itemids, item_documents = item_cut_words.keys(), item_cut_words.values()
+item_sem_vectors = item_sem_model.predict(pad_sequences(tk.texts_to_sequences(item_documents)))
+with open(item_sem_path, "wb") as fp:
+    for i in range(len(itemids)):
+        fp.write("item_" + itemids[i] + " " + " ".join([str(_) for _ in item_sem_vectors[i]]) + "\n")
 
 
-def main():
-    pass
+# save user_sem_model item_sem_model
+user_sem_model.save("user_sem_model.h5")
+item_sem_model.save("item_sem_model.h5")
 
 
-if __name__ == "__main__":
-    main()
-
-
-
-
-
+# # load user_sem_model item_sem_model
+# user_sem_model = load_model("user_sem_model.h5", custom_objects={"backend": backend})
+# item_sem_model = load_model("item_sem_model.h5", custom_objects={"backend": backend})

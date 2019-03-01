@@ -93,8 +93,8 @@ model.fit([user_train, pos_item_train] + neg_item_inputs, y_train)
 # save user_sem_model item_sem_model
 user_sem_model = Model(inputs=model.get_layer("user_input").input, outputs=model.get_layer("user_sem").output)
 item_sem_model = Model(inputs=model.get_layer("item_input").input, outputs=model.get_layer("item_sem").get_output_at(0))
-user_sem_model.save("Demo02/user_sem_model.h5")
-item_sem_model.save("Demo02/item_sem_model.h5")
+user_sem_model.save("user_sem_model.h5")
+item_sem_model.save("item_sem_model.h5")
 
 
 # save user item deep structured semantic representation

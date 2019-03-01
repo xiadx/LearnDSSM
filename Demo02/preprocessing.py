@@ -161,6 +161,5 @@ def main():
     save_user_vector(user_vector_path, user_vector)
 
 
-
 if __name__ == "__main__":
     main()
